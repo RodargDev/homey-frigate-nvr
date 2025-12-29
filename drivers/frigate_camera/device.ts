@@ -346,13 +346,25 @@ class Camera extends Homey.Device {
     }
     const settings = this.getSettings() as DeviceSettings
     const store = this.getStore() as DeviceStore
+
+    const settingsMqttHost = this.homey.settings.get('mqttHost') || false
+    const settingsMqttPort = this.homey.settings.get('mqttPort') || false
+
     if(store.mqttEnabled) {
       const mqttConfig:IClientOptions = {}
-      if(store.mqttHost) {
-        mqttConfig.host = store.mqttHost
+      if (settingsMqttHost) {
+        mqttConfig.host = settingsMqttHost
+      } else {
+        if(store.mqttHost) {
+          mqttConfig.host = store.mqttHost
+        }
       }
-      if(store.mqttPort) {
-        mqttConfig.port = store.mqttPort
+      if (settingsMqttPort) {
+        mqttConfig.port = settingsMqttPort
+      } else {
+        if(store.mqttPort) {
+          mqttConfig.port = store.mqttPort
+        }
       }
       if(settings.mqttUsername) {
         mqttConfig.username = settings.mqttUsername

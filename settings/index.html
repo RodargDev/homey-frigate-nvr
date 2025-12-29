@@ -52,6 +52,24 @@
     <hr/>
     <br/>
 
+    <fieldset class="homey-form-fieldset">
+      <legend class="homey-form-legend">MQTT</legend>
+
+        <div class="homey-form-group">
+          <label class="homey-form-label" for="mqttHost">Custom Host</label>
+          <input class="homey-form-input" name="mqttHost" id="mqttHost" type="text" value=""/>
+        </div>
+
+        <div class="homey-form-group">
+          <label class="homey-form-label" for="mqttPort">Custom Port</label>
+          <input class="homey-form-input" name="mqttPort" id="mqttPort" type="text" value=""/>
+        </div>
+    </fieldset>
+    <br/>
+    <br/>
+    <hr/>
+    <br/>
+
     <fieldset class="homey-form-checkbox-set">
       <legend class="homey-form-legend">Cameras</legend>
 
@@ -84,6 +102,8 @@
 
         var loggingEnabledElement = document.getElementById("loggingEnabled");
         var logLevelElement = document.getElementById("logLevel");
+        var mqttHostElement = document.getElementById("mqttHost");
+        var mqttPortElement = document.getElementById("mqttPort");
         var saveElement = document.getElementById("save");
         var showLogsElement = document.getElementById("showLogs");
         var logsDialogElement = document.getElementById("logsDialog");
@@ -99,6 +119,16 @@
           logLevelElement.value = logLevel || 'error';
         });
 
+        Homey.get("mqttHost", function (err, mqttHost) {
+          if (err) return Homey.alert(err);
+          mqttHostElement.value = mqttHost || "";
+        });
+
+        Homey.get("mqttPort", function (err, mqttPort) {
+          if (err) return Homey.alert(err);
+          mqttPortElement.value = mqttPort || "";
+        });
+
         Homey.get("snapshotRequired", function (err, snapshotRequired) {
           if (err) return Homey.alert(err);
           snapshotRequiredElement.checked = snapshotRequired || false;
@@ -109,11 +139,19 @@
             if (err) return Homey.alert(err);
             Homey.set("logLevel", logLevelElement.value, function (err) {
               if (err) return Homey.alert(err);
-              Homey.set("snapshotRequired", snapshotRequiredElement.checked, function (err) {
+                Homey.set("snapshotRequired", snapshotRequiredElement.checked, function (err) {
+                  if (err) return Homey.alert(err);
+                  Homey.alert('Saved. Restart the app for the new settings to take effect.')
+                })
+              });
+          });
+
+          Homey.set("mqttHost", mqttHostElement.value, function (err) {
                 if (err) return Homey.alert(err);
-                Homey.alert('Saved. Restart the app for the new settings to take effect.')
-              })
-            });
+          });
+
+          Homey.set("mqttPort", mqttPortElement.value, function (err) {
+                if (err) return Homey.alert(err);
           });
         });
 
