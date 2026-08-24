@@ -59,6 +59,7 @@ class Camera extends Homey.Device {
     this.snapshotRequired = this.homey.settings.get('snapshotRequired') || false
 
     await this._setupImages()
+    await this._setupVideo()
     await this._setupCapabilities()
     await this.unsetWarning()
     await this._connectToMQTT()
@@ -119,6 +120,113 @@ class Camera extends Homey.Device {
       }
     }
 
+  }
+
+  /**
+   * Setup video stream from Frigate via go2rtc
+   * Supports both WebRTC (preferred for remote access) and RTSP (local network)
+   */
+  async _setupVideo() {
+    if (!this.frigateURL || !this.frigateCameraName) {
+      this.logger?.info('Cannot setup video: missing frigateURL or cameraName');
+      return;
+    }
+
+    // Skip video for birdseye view (uses different stream format)
+    if (this.frigateCameraName === 'birdseye') {
+      return;
+    }
+
+    try {
+      const frigateUrlObj = new URL(this.frigateURL);
+      const frigateHost = frigateUrlObj.hostname;
+      const frigatePort = frigateUrlObj.port || '5000';
+      
+      // Try WebRTC first (works over internet via Cloudflare Tunnel)
+      // Then fallback to RTSP (local network only)
+      const webrtcSuccess = await this._setupWebRTCVideo(frigateHost, frigatePort);
+      
+      if (!webrtcSuccess) {
+        await this._setupRTSPVideo(frigateHost);
+      }
+      
+    } catch (err: any) {
+      this.logger?.info(`Could not setup video stream: ${err.message}`);
+    }
+  }
+
+  /**
+   * Setup WebRTC video stream (works over internet)
+   * go2rtc exposes WebRTC at: POST /api/go2rtc/webrtc?src=<camera>
+   */
+  async _setupWebRTCVideo(frigateHost: string, frigatePort: string): Promise<boolean> {
+    try {
+      this.logger?.info(`Setting up WebRTC video stream for ${this.frigateCameraName}`);
+
+      // @ts-ignore - videos API may not be in older type definitions
+      const video = await this.homey.videos.createVideoWebRTC();
+
+      video.registerOfferListener(async (offerSdp: string) => {
+        // Exchange SDP offer for answer via go2rtc API
+        const response = await fetch(
+          `${this.frigateURL}/api/go2rtc/webrtc?src=${this.frigateCameraName}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/sdp' },
+            body: offerSdp,
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`WebRTC SDP exchange failed: ${response.status}`);
+        }
+        
+        const answerSdp = await response.text();
+        return { answerSdp };
+      });
+
+      // @ts-ignore
+      await this.setCameraVideo('live', 'Live Stream (WebRTC)', video);
+      this.logger?.info(`WebRTC video stream setup complete for ${this.frigateCameraName}`);
+      return true;
+      
+    } catch (err: any) {
+      this.logger?.info(`WebRTC setup failed, will try RTSP: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Setup RTSP video stream (local network only)
+   * go2rtc exposes RTSP at: rtsp://<host>:8554/<camera>
+   */
+  async _setupRTSPVideo(frigateHost: string): Promise<boolean> {
+    try {
+      if (frigateHost === 'localhost' || frigateHost === '127.0.0.1') {
+        this.logger?.info('Warning: frigateURL uses localhost - RTSP video may not work on mobile.');
+      }
+      
+      const rtspUrl = `rtsp://${frigateHost}:8554/${this.frigateCameraName}`;
+      this.logger?.info(`Setting up RTSP video stream: ${rtspUrl}`);
+
+      // @ts-ignore
+      const video = await this.homey.videos.createVideoRTSP({
+        allowInvalidCertificates: true,
+      });
+
+      video.registerVideoUrlListener(async () => {
+        return { url: rtspUrl };
+      });
+
+      // @ts-ignore
+      await this.setCameraVideo('live', 'Live Stream (RTSP)', video);
+      this.logger?.info(`RTSP video stream setup complete for ${this.frigateCameraName}`);
+      return true;
+      
+    } catch (err: any) {
+      this.logger?.info(`RTSP setup failed: ${err.message}`);
+      return false;
+    }
   }
 
   _shouldThrottle():boolean {
