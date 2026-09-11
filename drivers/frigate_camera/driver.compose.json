@@ -57,25 +57,6 @@
         "hint": { "en": "When checked, each unique Frigate events can only trigger a workflow once." }
       }
     ]
-  }, {
-    "type": "group",
-    "label": { "en": "MQTT" },
-    "children": [
-      {
-        "id": "mqttUsername",
-        "type": "text",
-        "label": { "en": "Username" },
-        "value": "",
-        "hint": { "en": "The username for connecting to the MQTT server. Leave empty to use the username from the app settings." }
-      },
-      {
-        "id": "mqttPassword",
-        "type": "password",
-        "label": { "en": "Password" },
-        "value": "",
-        "hint": { "en": "The password for connecting to the MQTT server. Leave empty to use the password from the app settings." }
-      }
-    ]
   }],
   "store": [
     {

@@ -73,11 +73,8 @@ class MyDriver extends Homey.Driver {
             trackedObjects: trackedObjects.join(',')
           },
           settings: {
-            frigateURL: frigateAddress,
-            mqttUsername: mqttConfig.user,
-            // Frigate does not expose the MQTT password through its config API, so it is
-            // left empty and resolved from the device or app settings instead
-            mqttPassword: ''
+            frigateURL: frigateAddress
+            // MQTT credentials are not stored per camera, they live in the app settings
           },
         }
       });
@@ -97,11 +94,8 @@ class MyDriver extends Homey.Driver {
             trackedObjects: trackedObjects.join(',')
           },
           settings: {
-            frigateURL: frigateAddress,
-            mqttUsername: mqttConfig.user,
-            // Frigate does not expose the MQTT password through its config API, so it is
-            // left empty and resolved from the device or app settings instead
-            mqttPassword: ''
+            frigateURL: frigateAddress
+            // MQTT credentials are not stored per camera, they live in the app settings
           }
         })
       }

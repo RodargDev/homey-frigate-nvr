@@ -10,8 +10,6 @@ import path from 'path';
 interface DeviceSettings {
   frigateURL: string
   detectionThrottle: number
-  mqttUsername: string
-  mqttPassword: string
   uniqueEvents: boolean
 }
 
@@ -312,9 +310,6 @@ class Camera extends Homey.Device {
     const newS = newSettings as DeviceSettings
     if(changedKeys.includes('frigateURL')) {
       this._syncFrigateData(newS)
-    } else if (changedKeys.includes('mqttUsername') || changedKeys.includes('mqttPassword')) {
-      await this._disconnectFromMQTT()
-      await this._connectToMQTT()
     }
     this.logger!.info("MyDevice settings where changed");
   }
@@ -349,8 +344,8 @@ class Camera extends Homey.Device {
 
     const settingsMqttHost = this.homey.settings.get('mqttHost') || false
     const settingsMqttPort = this.homey.settings.get('mqttPort') || false
-    const settingsMqttUsername = this.homey.settings.get('mqttUsername') || ''
-    const settingsMqttPassword = this.homey.settings.get('mqttPassword') || ''
+    const mqttUsername = this.homey.settings.get('mqttUsername') || ''
+    const mqttPassword = this.homey.settings.get('mqttPassword') || ''
 
     if(store.mqttEnabled) {
       const mqttConfig:IClientOptions = {}
@@ -368,10 +363,8 @@ class Camera extends Homey.Device {
           mqttConfig.port = store.mqttPort
         }
       }
-      // Credentials set on the device win, the app settings act as the fallback for
-      // cameras that have none of their own. Leaving both empty connects anonymously.
-      const mqttUsername = settings.mqttUsername || settingsMqttUsername
-      const mqttPassword = settings.mqttPassword || settingsMqttPassword
+      // Credentials live in the app settings only, so every camera shares them.
+      // Leaving both empty connects anonymously.
       if(mqttUsername) {
         mqttConfig.username = mqttUsername
       }
