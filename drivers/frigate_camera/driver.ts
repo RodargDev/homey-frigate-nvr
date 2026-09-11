@@ -2,7 +2,7 @@ import Homey from 'homey';
 import { PairSession } from 'homey/lib/Driver';
 import axios from 'axios';
 import { FrigateNVRConfig } from './types';
-import { fetchFrigateConfig } from './frigateAPI';
+import { fetchFrigateConfig, loginToFrigate } from './frigateAPI';
 
 class MyDriver extends Homey.Driver {
 
@@ -19,9 +19,15 @@ class MyDriver extends Homey.Driver {
     let frigateConfig:FrigateNVRConfig|null = null
     let frigateAddress:string|null = null
 
-    const connect = async(address:string) => {
+    const connect = async(address:string, username:string, password:string) => {
       try {
-        frigateConfig = await fetchFrigateConfig(address)
+        // Only log in when credentials were given, so an unauthenticated Frigate keeps
+        // working as before. The session cookie lives no longer than this pairing view.
+        let sessionCookie:string|undefined
+        if(username || password) {
+          sessionCookie = await loginToFrigate(address, {username, password})
+        }
+        frigateConfig = await fetchFrigateConfig(address, sessionCookie)
         await session.showView('list_devices')
       } catch(err:any) {
         await session.emit('error', err.message)
@@ -34,12 +40,14 @@ class MyDriver extends Homey.Driver {
       await session.emit('defaultFrigateURL', defaultFrigateURL)
     })
 
-    session.setHandler('connect', async (address) => {
+    session.setHandler('connect', async (data) => {
+      const address:string = data.address
       this.log('Received connect event '+ address)
       frigateAddress = address
-      // Store the Frigate URL to save the user from entering it again
+      // Store the Frigate URL to save the user from entering it again. The Frigate
+      // credentials are intentionally not stored, they are used for this session only.
       this.homey.settings.set('defaultFrigateURL', frigateAddress)
-      await connect(address)
+      await connect(address, data.username || '', data.password || '')
     })
 
     session.setHandler('list_devices', async () => {

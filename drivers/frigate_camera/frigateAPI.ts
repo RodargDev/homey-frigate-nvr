@@ -6,15 +6,55 @@ import { pipeline } from 'node:stream'
 import { Readable, Writable } from "node:stream";
 import { Logger } from "../../utils/logging";
 
-export const fetchFrigateConfig = async(frigateURL:string) => {
-  const response = await axios.get<FrigateNVRConfig>(`${frigateURL}/api/config`, {
-    timeout: 10000
+export interface FrigateCredentials {
+  username: string
+  password: string
+}
+
+// Frigate answers with a frigate_token cookie. The caller keeps it for the duration of
+// a pairing session only, it is deliberately never written to the device or app settings.
+export const loginToFrigate = async(frigateURL:string, credentials:FrigateCredentials):Promise<string> => {
+  const response = await axios.post(`${frigateURL}/api/login`, {
+    user: credentials.username,
+    password: credentials.password
+  }, {
+    timeout: 10000,
+    validateStatus: () => true
   })
+  if(response.status === 401) {
+    throw new Error('FrigateNVR rejected the username or password')
+  }
+  if(response.status !== 200) {
+    throw new Error(`Failed to log in to FrigateNVR. Received error ${response.status} - ${response.statusText}`)
+  }
+  const setCookie:string[] = response.headers['set-cookie'] || []
+  const cookies = setCookie
+    .map(cookie => cookie.split(';')[0].trim())
+    .filter(cookie => cookie.length > 0)
+  // Frigate names it frigate_token, fall back to whatever it did send rather than fail
+  const sessionCookie = cookies.find(cookie => cookie.startsWith('frigate_token=')) || cookies[0]
+  if(!sessionCookie) {
+    throw new Error('FrigateNVR accepted the login but returned no session cookie')
+  }
+  return sessionCookie
+}
+
+export const fetchFrigateConfig = async(frigateURL:string, sessionCookie?:string) => {
+  const response = await axios.get<FrigateNVRConfig>(`${frigateURL}/api/config`, {
+    timeout: 10000,
+    headers: sessionCookie ? { Cookie: sessionCookie } : undefined,
+    validateStatus: () => true
+  })
+  if(response.status === 401) {
+    throw new Error('FrigateNVR requires authentication. Fill in your Frigate username and password.')
+  }
   if(!response || response.status !== 200) {
     throw new Error(`Failed to reach FrigateNVR at <url>. Received error ${response.status} - ${response.statusText}`)
-  } else {
-    return response.data
   }
+  if(!response.data || !response.data.cameras) {
+    throw new Error('The response did not contain a camera list. Check that the URL points at FrigateNVR itself and not at a proxy or login page.')
+  }
+  return response.data
 }
 
 export const axiosStream = (url:string):(stream:Writable)=>Promise<void> => {

@@ -8,8 +8,14 @@
     submitButton.classList.add('disabled')
 
     const frigateURLInputElement = document.getElementById('frigateURL')
+    const usernameInputElement = document.getElementById('username')
+    const passwordInputElement = document.getElementById('password')
     if(frigateURLInputElement.value) {
-      Homey.emit('connect', frigateURLInputElement.value)
+      Homey.emit('connect', {
+        address: frigateURLInputElement.value,
+        username: usernameInputElement.value,
+        password: passwordInputElement.value
+      })
     }
     return false
   }
@@ -35,6 +41,27 @@
       id="frigateURL"
       type="url"
       placeholder="http://<frigate url>:5000" />
+
+    <label class="homey-form-label" for="username">Frigate username</label>
+    <input
+      class="homey-form-input"
+      id="username"
+      type="text"
+      autocomplete="off"
+      placeholder="Leave empty if Frigate has no authentication" />
+
+    <label class="homey-form-label" for="password">Frigate password</label>
+    <input
+      class="homey-form-input"
+      id="password"
+      type="password"
+      autocomplete="off"
+      placeholder="Leave empty if Frigate has no authentication" />
+
+    <p class="homey-text-small">
+      These credentials are used to read the camera list from Frigate right now.
+      They are not stored.
+    </p>
   </fieldset>
   <button class="homey-button-primary" id="submit">Connect</button>
   <p id="message"></p>
