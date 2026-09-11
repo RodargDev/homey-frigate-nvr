@@ -1,0 +1,9 @@
+# npm rewrites package-lock.json with platform line endings, which turns a five line
+# change into a full file rewrite on Windows. Normalise text files to LF on commit.
+* text=auto eol=lf
+
+# Image assets contain CR bytes as data and must never be normalised
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.PNG binary
