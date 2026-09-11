@@ -199,6 +199,16 @@ const connectToMQTTServer = async (mqttConfig:IClientOptions, mqttTopicPrefix:st
     
     client.on('connect', async (ack) => {
       logger.info({msg: 'Client connected', mqtt: {username: mqttConfig.username, host: mqttConfig.host, port: mqttConfig.port}, ack})
+
+      // Report before the first await, while no camera continuation has run yet. On a
+      // first connect this list is still empty and listenToEvents does the reporting.
+      // On a reconnect it holds every camera, and listenToEvents is not called again.
+      if(currentConnection) {
+        for(let device of currentConnection.devices) {
+          logCameraConnected(currentConnection, device.cameraName, logger)
+        }
+      }
+
       try {
         await client.unsubscribeAsync(eventsTopic)
       } catch(err) {
@@ -212,13 +222,6 @@ const connectToMQTTServer = async (mqttConfig:IClientOptions, mqttTopicPrefix:st
         return
       }
       logger.info(`Listening to topic ${eventsTopic} on MQTT server ${mqttConfig.username}@${mqttConfig.host}:${mqttConfig.port}`)
-
-      // Cameras already registered on this connection are live again after a reconnect
-      if(currentConnection) {
-        for(let device of currentConnection.devices) {
-          logCameraConnected(currentConnection, device.cameraName, logger)
-        }
-      }
     })
 
   } else if(!currentConnection.client.connected) {
