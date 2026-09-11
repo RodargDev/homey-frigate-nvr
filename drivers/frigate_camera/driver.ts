@@ -67,7 +67,9 @@ class MyDriver extends Homey.Driver {
           settings: {
             frigateURL: frigateAddress,
             mqttUsername: mqttConfig.user,
-            mqttPassword: mqttConfig.password
+            // Frigate does not expose the MQTT password through its config API, so it is
+            // left empty and resolved from the device or app settings instead
+            mqttPassword: ''
           },
         }
       });
@@ -89,7 +91,9 @@ class MyDriver extends Homey.Driver {
           settings: {
             frigateURL: frigateAddress,
             mqttUsername: mqttConfig.user,
-            mqttPassword: mqttConfig.password
+            // Frigate does not expose the MQTT password through its config API, so it is
+            // left empty and resolved from the device or app settings instead
+            mqttPassword: ''
           }
         })
       }

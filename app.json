@@ -315,7 +315,7 @@
               },
               "value": "",
               "hint": {
-                "en": "The username for connecting to the MQTT server"
+                "en": "The username for connecting to the MQTT server. Leave empty to use the username from the app settings."
               }
             },
             {
@@ -326,7 +326,7 @@
               },
               "value": "",
               "hint": {
-                "en": "The hostname for connecting to the MQTT server"
+                "en": "The password for connecting to the MQTT server. Leave empty to use the password from the app settings."
               }
             }
           ]

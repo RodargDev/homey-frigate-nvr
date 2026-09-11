@@ -64,6 +64,22 @@
           <label class="homey-form-label" for="mqttPort">Custom Port</label>
           <input class="homey-form-input" name="mqttPort" id="mqttPort" type="text" value=""/>
         </div>
+
+        <div class="homey-form-group">
+          <label class="homey-form-label" for="mqttUsername">Username</label>
+          <input class="homey-form-input" name="mqttUsername" id="mqttUsername" type="text" value=""/>
+        </div>
+
+        <div class="homey-form-group">
+          <label class="homey-form-label" for="mqttPassword">Password</label>
+          <input class="homey-form-input" name="mqttPassword" id="mqttPassword" type="password" value=""/>
+        </div>
+
+        <p class="homey-text">
+          Cameras that have no username or password of their own fall back to the
+          credentials entered here. Frigate does not expose the MQTT password through
+          its configuration API, so it has to be entered manually.
+        </p>
     </fieldset>
     <br/>
     <br/>
@@ -104,6 +120,8 @@
         var logLevelElement = document.getElementById("logLevel");
         var mqttHostElement = document.getElementById("mqttHost");
         var mqttPortElement = document.getElementById("mqttPort");
+        var mqttUsernameElement = document.getElementById("mqttUsername");
+        var mqttPasswordElement = document.getElementById("mqttPassword");
         var saveElement = document.getElementById("save");
         var showLogsElement = document.getElementById("showLogs");
         var logsDialogElement = document.getElementById("logsDialog");
@@ -129,6 +147,16 @@
           mqttPortElement.value = mqttPort || "";
         });
 
+        Homey.get("mqttUsername", function (err, mqttUsername) {
+          if (err) return Homey.alert(err);
+          mqttUsernameElement.value = mqttUsername || "";
+        });
+
+        Homey.get("mqttPassword", function (err, mqttPassword) {
+          if (err) return Homey.alert(err);
+          mqttPasswordElement.value = mqttPassword || "";
+        });
+
         Homey.get("snapshotRequired", function (err, snapshotRequired) {
           if (err) return Homey.alert(err);
           snapshotRequiredElement.checked = snapshotRequired || false;
@@ -151,6 +179,14 @@
           });
 
           Homey.set("mqttPort", mqttPortElement.value, function (err) {
+                if (err) return Homey.alert(err);
+          });
+
+          Homey.set("mqttUsername", mqttUsernameElement.value, function (err) {
+                if (err) return Homey.alert(err);
+          });
+
+          Homey.set("mqttPassword", mqttPasswordElement.value, function (err) {
                 if (err) return Homey.alert(err);
           });
         });

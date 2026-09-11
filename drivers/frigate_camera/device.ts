@@ -349,6 +349,8 @@ class Camera extends Homey.Device {
 
     const settingsMqttHost = this.homey.settings.get('mqttHost') || false
     const settingsMqttPort = this.homey.settings.get('mqttPort') || false
+    const settingsMqttUsername = this.homey.settings.get('mqttUsername') || ''
+    const settingsMqttPassword = this.homey.settings.get('mqttPassword') || ''
 
     if(store.mqttEnabled) {
       const mqttConfig:IClientOptions = {}
@@ -366,11 +368,15 @@ class Camera extends Homey.Device {
           mqttConfig.port = store.mqttPort
         }
       }
-      if(settings.mqttUsername) {
-        mqttConfig.username = settings.mqttUsername
+      // Credentials set on the device win, the app settings act as the fallback for
+      // cameras that have none of their own. Leaving both empty connects anonymously.
+      const mqttUsername = settings.mqttUsername || settingsMqttUsername
+      const mqttPassword = settings.mqttPassword || settingsMqttPassword
+      if(mqttUsername) {
+        mqttConfig.username = mqttUsername
       }
-      if(settings.mqttPassword) {
-        mqttConfig.password = settings.mqttPassword
+      if(mqttPassword) {
+        mqttConfig.password = mqttPassword
       }
 
       try {
