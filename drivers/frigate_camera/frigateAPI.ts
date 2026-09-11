@@ -133,6 +133,20 @@ function findOccupancyTopic(devices:Device[], topic:string):OccupancyTopic|null 
   return null
 }
 
+// Never log the password, only the identity and the endpoint it connected to
+const logCameraConnected = (connection:MQTTConnection, cameraName:string, logger:Logger) => {
+  logger.info({
+    msg: 'Camera connected to MQTT',
+    camera: cameraName,
+    eventsTopic: `${connection.topicPrefix}/events`,
+    mqtt: {
+      username: connection.config.username,
+      host: connection.config.host,
+      port: connection.config.port
+    }
+  })
+}
+
 const connectToMQTTServer = async (mqttConfig:IClientOptions, mqttTopicPrefix:string, logger:Logger):Promise<MQTTConnection> => {
   mqttConfig.clientId = 'homey-frigate-nvr'
   if(!currentConnection) {
@@ -198,6 +212,13 @@ const connectToMQTTServer = async (mqttConfig:IClientOptions, mqttTopicPrefix:st
         return
       }
       logger.info(`Listening to topic ${eventsTopic} on MQTT server ${mqttConfig.username}@${mqttConfig.host}:${mqttConfig.port}`)
+
+      // Cameras already registered on this connection are live again after a reconnect
+      if(currentConnection) {
+        for(let device of currentConnection.devices) {
+          logCameraConnected(currentConnection, device.cameraName, logger)
+        }
+      }
     })
 
   } else if(!currentConnection.client.connected) {
@@ -249,6 +270,10 @@ export const listenToEvents = async (config: {
     await connection.client.subscribeAsync(occupancyTopic.topic)
   }
   connection.devices.push(device)
+
+  if(connection.client.connected) {
+    logCameraConnected(connection, config.cameraName, config.logger)
+  }
 }
 
 export const stopListeningToEvents = async (cameraName:string) => {
